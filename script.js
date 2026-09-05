@@ -1,439 +1,211 @@
-/* Auto Dark / Light Mode Support based on System/Phone Settings */
-:root {
-    --bg-color: #0b0f19;
-    --card-bg: #111827;
-    --border-color: #1f293d;
-    --text-primary: #f8fafc;
-    --text-secondary: #94a3b8;
-    --accent-color: #00f0ff;
-    --accent-glow: rgba(0, 240, 255, 0.3);
-    --input-bg: #090d16;
-}
+// --- Firebase Config (আপনার কনফিগারেশন) ---
+const firebaseConfig = {
+    apiKey: "AIzaSyDG5WM0vhgigbmEDahNlEkry5Mepek90UM",
+    authDomain: "ip-chat-6423a.firebaseapp.com",
+    databaseURL: "https://ip-chat-6423a-default-rtdb.firebaseio.com",
+    projectId: "ip-chat-6423a",
+    storageBucket: "ip-chat-6423a.firebasestorage.app",
+    messagingSenderId: "467904400423",
+    appId: "1:467904400423:web:f2a3fbeaac2702aa859202",
+    measurementId: "G-RLXGCLNQKP"
+};
 
-@media (prefers-color-scheme: light) {
-    :root {
-        --bg-color: #f1f5f9;
-        --card-bg: #ffffff;
-        --border-color: #cbd5e1;
-        --text-primary: #0f172a;
-        --text-secondary: #64748b;
-        --accent-color: #0284c7;
-        --accent-glow: rgba(2, 132, 199, 0.2);
-        --input-bg: #f8fafc;
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// DOM Elements
+const authScreen = document.getElementById('auth-screen');
+const chatScreen = document.getElementById('chat-screen');
+const usernameInput = document.getElementById('username');
+const roomCodeInput = document.getElementById('room-code');
+const connectBtn = document.getElementById('connect-btn');
+const displayRoom = document.getElementById('display-room');
+const headerRoomCode = document.getElementById('header-room-code');
+const chatMessages = document.getElementById('chat-messages');
+const messageInput = document.getElementById('message-input');
+const sendBtn = document.getElementById('send-btn');
+const clearBtn = document.getElementById('clear-btn');
+const leaveBtn = document.getElementById('leave-btn');
+const userBadge = document.getElementById('user-badge');
+const membersList = document.getElementById('members-list');
+const onlineNum = document.getElementById('online-num');
+const attachBtn = document.getElementById('attach-btn');
+const mediaFileInput = document.getElementById('media-file-input');
+
+// Mobile Menu Elements
+const chatSidebar = document.getElementById('chat-sidebar');
+const menuToggleBtn = document.getElementById('menu-toggle-btn');
+const closeSidebar = document.getElementById('close-sidebar');
+
+let currentUser = '';
+let currentRoom = '';
+let roomRef = null;
+let userPresenceRef = null;
+
+// Connect to Room
+connectBtn.addEventListener('click', () => {
+    const username = usernameInput.value.trim();
+    const roomCode = roomCodeInput.value.trim().toLowerCase();
+
+    if (!username || !roomCode) {
+        alert('Please enter both username and room code/IP.');
+        return;
     }
+
+    currentUser = username;
+    currentRoom = roomCode.replace(/[.#$[\]]/g, '_');
+
+    authScreen.classList.add('hidden');
+    chatScreen.classList.remove('hidden');
+    displayRoom.textContent = roomCode;
+    headerRoomCode.textContent = roomCode;
+    userBadge.textContent = username;
+
+    initChatRoom();
+});
+
+// Mobile Sidebar Toggle Events
+if (menuToggleBtn) {
+    menuToggleBtn.addEventListener('click', () => {
+        chatSidebar.classList.toggle('active');
+    });
+}
+if (closeSidebar) {
+    closeSidebar.addEventListener('click', () => {
+        chatSidebar.classList.remove('active');
+    });
 }
 
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: monospace, sans-serif;
+function initChatRoom() {
+    roomRef = db.ref('rooms/' + currentRoom + '/messages');
+    
+    // Listen for new messages & media
+    roomRef.on('child_added', (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+            appendMessage(data.sender, data.text, data.mediaUrl, data.mediaType);
+        }
+    });
+
+    // Listen for clear chat
+    db.ref('rooms/' + currentRoom + '/cleared').on('value', (snapshot) => {
+        if(snapshot.val()) {
+            chatMessages.innerHTML = '<div class="system-message">— Chat cleared —</div>';
+        }
+    });
+
+    // Handle Active Online Members Presence
+    const memberKey = currentUser.replace(/[.#$[\]]/g, '_');
+    userPresenceRef = db.ref('rooms/' + currentRoom + '/members/' + memberKey);
+    userPresenceRef.set(true);
+    userPresenceRef.onDisconnect().remove();
+
+    // Track active members list
+    db.ref('rooms/' + currentRoom + '/members').on('value', (snapshot) => {
+        const members = snapshot.val() || {};
+        const memberNames = Object.keys(members);
+        onlineNum.textContent = memberNames.length;
+        
+        membersList.innerHTML = '';
+        memberNames.forEach(name => {
+            const div = document.createElement('div');
+            div.classList.add('member-item');
+            const isYou = name === currentUser.replace(/[.#$[\]]/g, '_');
+            div.innerHTML = `<span><span class="dot" style="display:inline-block; width:6px; height:6px; background:#22c55e; border-radius:50%; margin-right:6px;"></span>${name}</span> ${isYou ? '<span class="you-tag">you</span>' : ''}`;
+            membersList.appendChild(div);
+        });
+    });
 }
 
-body {
-    background-color: var(--bg-color);
-    color: var(--text-primary);
-    height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    overflow: hidden;
+// Send Text Message
+function sendMessage() {
+    const text = messageInput.value.trim();
+    if (!text) return;
+
+    roomRef.push({
+        sender: currentUser,
+        text: text,
+        timestamp: Date.now()
+    });
+
+    messageInput.value = '';
 }
 
-.hidden {
-    display: none !important;
-}
+sendBtn.addEventListener('click', sendMessage);
+messageInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') sendMessage();
+});
 
-.highlight {
-    color: var(--accent-color);
-}
+// Media Upload Trigger (Photo & Video)
+attachBtn.addEventListener('click', () => {
+    mediaFileInput.click();
+});
 
-.mobile-only {
-    display: none;
-}
+mediaFileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-/* Auth / Login Screen */
-.container {
-    width: 100%;
-    max-width: 440px;
-    padding: 20px;
-}
+    const reader = new FileReader();
+    reader.onload = function(uploadEvent) {
+        const base64Data = uploadEvent.target.result;
+        const mediaType = file.type.startsWith('video') ? 'video' : 'image';
 
-.card {
-    background: var(--card-bg);
-    padding: 35px;
-    border-radius: 12px;
-    border: 1px solid var(--border-color);
-    box-shadow: 0 0 25px var(--accent-glow);
-}
+        roomRef.push({
+            sender: currentUser,
+            text: file.name,
+            mediaUrl: base64Data,
+            mediaType: mediaType,
+            timestamp: Date.now()
+        });
+    };
+    reader.readAsDataURL(file);
+    mediaFileInput.value = '';
+});
 
-.card h1 {
-    font-size: 26px;
-    margin-bottom: 8px;
-    letter-spacing: 2px;
-}
-
-.card p {
-    font-size: 12px;
-    color: var(--text-secondary);
-    margin-bottom: 25px;
-}
-
-.sub-note {
-    font-size: 11px;
-    color: var(--text-secondary);
-    margin-top: 5px;
-    margin-bottom: 20px;
-}
-
-.input-group {
-    margin-bottom: 18px;
-}
-
-.input-group label {
-    display: block;
-    font-size: 11px;
-    color: var(--text-secondary);
-    margin-bottom: 6px;
-    letter-spacing: 1px;
-}
-
-.input-group input {
-    width: 100%;
-    padding: 12px 14px;
-    background: var(--input-bg);
-    border: 1px solid var(--border-color);
-    color: var(--text-primary);
-    border-radius: 6px;
-    font-size: 14px;
-}
-
-.input-group input:focus {
-    outline: none;
-    border-color: var(--accent-color);
-    box-shadow: 0 0 10px var(--accent-glow);
-}
-
-.glowing-btn {
-    width: 100%;
-    padding: 13px;
-    background: var(--accent-color);
-    border: none;
-    color: #0b0f19;
-    font-weight: bold;
-    border-radius: 6px;
-    cursor: pointer;
-    letter-spacing: 1px;
-    font-size: 14px;
-    box-shadow: 0 0 15px var(--accent-glow);
-    transition: 0.3s;
-}
-
-.glowing-btn:hover {
-    opacity: 0.9;
-    box-shadow: 0 0 25px var(--accent-color);
-}
-
-/* Chat Layout & Sidebar */
-.chat-layout {
-    display: flex;
-    width: 100vw;
-    height: 100vh;
-    background: var(--bg-color);
-    position: relative;
-}
-
-.chat-sidebar {
-    width: 280px;
-    background: var(--card-bg);
-    border-right: 1px solid var(--border-color);
-    display: flex;
-    flex-direction: column;
-    padding: 20px;
-    z-index: 100;
-}
-
-.sidebar-top {
-    font-size: 20px;
-    font-weight: bold;
-    margin-bottom: 25px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.room-box {
-    background: var(--input-bg);
-    border: 1px solid var(--border-color);
-    padding: 15px;
-    border-radius: 8px;
-    margin-bottom: 20px;
-}
-
-.room-box .label {
-    font-size: 10px;
-    color: var(--text-secondary);
-    display: block;
-    margin-bottom: 5px;
-    letter-spacing: 1px;
-}
-
-.room-box b {
-    font-size: 18px;
-}
-
-.online-count {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 12px;
-    color: var(--text-secondary);
-    margin-top: 8px;
-}
-
-.dot {
-    width: 8px;
-    height: 8px;
-    background: #22c55e;
-    border-radius: 50%;
-    box-shadow: 0 0 8px #22c55e;
-}
-
-.members-section {
-    flex: 1;
-    overflow-y: auto;
-}
-
-.members-section .label {
-    font-size: 10px;
-    color: var(--text-secondary);
-    letter-spacing: 1px;
-    display: block;
-    margin-bottom: 10px;
-}
-
-.members-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.member-item {
-    background: var(--input-bg);
-    border: 1px solid var(--border-color);
-    padding: 8px 12px;
-    border-radius: 6px;
-    font-size: 13px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.member-item .you-tag {
-    font-size: 10px;
-    background: var(--border-color);
-    padding: 2px 6px;
-    border-radius: 4px;
-}
-
-.sidebar-bottom {
-    padding-top: 15px;
-    border-top: 1px solid var(--border-color);
-}
-
-/* Main Chat Section */
-.chat-main {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    background: var(--bg-color);
-    width: 100%;
-}
-
-.chat-header {
-    padding: 15px 20px;
-    background: var(--card-bg);
-    border-bottom: 1px solid var(--border-color);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.header-left-group {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.header-room-info {
-    font-size: 13px;
-    color: var(--text-secondary);
-    letter-spacing: 1px;
-}
-
-.header-actions {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.outline-btn {
-    background: transparent;
-    border: 1px solid var(--border-color);
-    color: var(--text-secondary);
-    padding: 6px 12px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 12px;
-    transition: 0.2s;
-}
-
-.outline-btn:hover {
-    border-color: var(--accent-color);
-    color: var(--text-primary);
-}
-
-.user-badge {
-    background: var(--input-bg);
-    border: 1px solid var(--border-color);
-    padding: 6px 12px;
-    border-radius: 6px;
-    font-size: 12px;
-    color: var(--accent-color);
-    max-width: 90px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.chat-messages {
-    flex: 1;
-    padding: 20px;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.system-message {
-    text-align: center;
-    font-size: 12px;
-    color: var(--text-secondary);
-    margin: 10px 0;
-}
-
-.message {
-    max-width: 75%;
-    padding: 10px 14px;
-    border-radius: 8px;
-    font-size: 13px;
-    word-break: break-word;
-    line-height: 1.4;
-    border: 1px solid var(--border-color);
-}
-
-.message.incoming {
-    background: var(--card-bg);
-    align-self: flex-start;
-}
-
-.message.outgoing {
-    background: var(--input-bg);
-    align-self: flex-end;
-    border-color: var(--accent-glow);
-}
-
-.message .sender {
-    font-size: 10px;
-    color: var(--accent-color);
-    display: block;
-    margin-bottom: 4px;
-    font-weight: bold;
-}
-
-.media-content {
-    max-width: 100%;
-    border-radius: 6px;
-    margin-top: 5px;
-    display: block;
-}
-
-/* Chat Input Area */
-.chat-input-area {
-    padding: 12px 15px;
-    background: var(--card-bg);
-    border-top: 1px solid var(--border-color);
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.icon-btn {
-    background: transparent;
-    border: none;
-    color: var(--text-secondary);
-    font-size: 18px;
-    cursor: pointer;
-    padding: 5px;
-    transition: 0.2s;
-}
-
-.icon-btn:hover {
-    color: var(--accent-color);
-}
-
-.chat-input-area input[type="text"] {
-    flex: 1;
-    padding: 12px 14px;
-    background: var(--input-bg);
-    border: 1px solid var(--border-color);
-    color: var(--text-primary);
-    border-radius: 8px;
-    font-size: 14px;
-}
-
-.chat-input-area input[type="text"]:focus {
-    outline: none;
-    border-color: var(--accent-color);
-    box-shadow: 0 0 10px var(--accent-glow);
-}
-
-.send-icon-btn {
-    width: 42px;
-    height: 42px;
-    background: var(--accent-color);
-    border: none;
-    color: #0b0f19;
-    border-radius: 8px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 15px;
-    box-shadow: 0 0 10px var(--accent-glow);
-    transition: 0.3s;
-}
-
-.send-icon-btn:hover {
-    opacity: 0.9;
-    box-shadow: 0 0 20px var(--accent-color);
-}
-
-/* Responsive Mobile Sidebar Styles */
-@media(max-width: 768px) {
-    .mobile-only {
-        display: inline-block;
+// Append Message / Media to UI
+function appendMessage(sender, text, mediaUrl, mediaType) {
+    const msgDiv = document.createElement('div');
+    msgDiv.classList.add('message');
+    
+    let mediaHTML = '';
+    if (mediaUrl) {
+        if (mediaType === 'video') {
+            mediaHTML = `<video src="${mediaUrl}" controls class="media-content"></video>`;
+        } else {
+            mediaHTML = `<img src="${mediaUrl}" class="media-content" alt="Uploaded Image">`;
+        }
     }
-    .chat-sidebar {
-        position: absolute;
-        top: 0;
-        left: -100%;
-        height: 100%;
-        width: 260px;
-        transition: 0.3s ease-in-out;
-        box-shadow: 5px 0 20px rgba(0,0,0,0.5);
+
+    if (sender === currentUser) {
+        msgDiv.classList.add('outgoing');
+        msgDiv.innerHTML = `<span class="sender">You</span>${mediaUrl ? mediaHTML : escapeHtml(text)}`;
+    } else {
+        msgDiv.classList.add('incoming');
+        msgDiv.innerHTML = `<span class="sender">${escapeHtml(sender)}</span>${mediaUrl ? mediaHTML : escapeHtml(text)}`;
     }
-    .chat-sidebar.active {
-        left: 0;
+
+    chatMessages.appendChild(msgDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+// Clear Chat
+clearBtn.addEventListener('click', () => {
+    if (confirm('Are you sure you want to clear the chat for everyone?')) {
+        db.ref('rooms/' + currentRoom + '/messages').remove();
+        db.ref('rooms/' + currentRoom + '/cleared').set(true);
     }
+});
+
+// Leave Room
+leaveBtn.addEventListener('click', () => {
+    if(userPresenceRef) userPresenceRef.remove();
+    window.location.reload();
+});
+
+// Helper to prevent HTML injection
+function escapeHtml(text) {
+    if (!text) return '';
+    const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+    return text.replace(/[&<>"']/g, function(m) { return map[m]; });
 }
