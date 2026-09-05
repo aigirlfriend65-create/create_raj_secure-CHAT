@@ -3,58 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IPChat — Room-Based Messenger</title>
+    <title>IPCHAT — Secure Room Messenger</title>
     <link rel="stylesheet" href="style.css">
-    <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
 
-    <!-- Login / Room Join Screen -->
-    <div id="auth-screen" class="container">
-        <div class="card">
-            <h1>[ IPCHAT ]</h1>
-            <p>Enter a shared IP address or room code to join the same room.</p>
+    <div id="auth-screen" class="auth-wrapper">
+        <div class="auth-card">
+            <h1 class="logo-title">[ <span>IP</span>CHAT ]</h1>
+            <p>Enter a shared IP address to join the same room</p>
             
             <div class="input-group">
                 <label>USERNAME</label>
-                <input type="text" id="username" placeholder="Your Name" autocomplete="off">
+                <input type="text" id="username" placeholder="e.g. alice" autocomplete="off">
             </div>
 
             <div class="input-group">
                 <label>IP ADDRESS (ROOM CODE)</label>
-                <input type="text" id="room-code" placeholder="e.g. 192.168.1.1 or custom-room" autocomplete="off">
+                <input type="text" id="room-code" placeholder="e.g. 192.168.1.1" autocomplete="off">
             </div>
 
-            <button id="connect-btn">CONNECT</button>
+            <button id="connect-btn">CONNECT <i class="fa-solid fa-arrow-right"></i></button>
         </div>
     </div>
 
-    <!-- Chat Room Screen -->
-    <div id="chat-screen" class="chat-container hidden">
-        <header class="chat-header">
-            <div class="header-left">
-                <span class="brand">[IPCHAT]</span> 
-                <span class="room-indicator">ROOM: <b id="display-room"></b></span>
+    <div id="chat-screen" class="chat-layout hidden">
+        <aside class="chat-sidebar">
+            <div class="sidebar-top">
+                <h2 class="sidebar-logo">[<span>IP</span>CHAT]</h2>
+                <div class="room-box">
+                    <span class="label">ROOM</span>
+                    <span id="display-room" class="room-name">3434</span>
+                    <span class="online-status"><span class="dot"></span> <span id="online-count">1</span> online</span>
+                </div>
             </div>
-            <div class="header-right">
-                <span class="online-status"><span class="dot"></span> <span id="online-count">1</span> online</span>
-                <button id="clear-btn" title="Clear Chat"><i class="fa-solid fa-trash"></i> Clear</button>
-                <button id="leave-btn" title="Leave Room"><i class="fa-solid fa-arrow-left-long"></i> Leave</button>
+
+            <div class="members-section">
+                <h3>MEMBERS</h3>
+                <div id="members-list" class="members-list">
+                    </div>
             </div>
-        </header>
 
-        <div class="chat-messages" id="chat-messages">
-            <div class="system-message">--- Start of conversation ---</div>
-        </div>
+            <div class="sidebar-bottom">
+                <button id="leave-btn"><i class="fa-solid fa-arrow-left-long"></i> Leave Room</button>
+            </div>
+        </aside>
 
-        <div class="chat-input-area">
-            <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off">
-            <button id="send-btn"><i class="fa-solid fa-paper-plane"></i></button>
-        </div>        
+        <main class="chat-main">
+            <header class="main-header">
+                <div class="header-info">
+                    <span>ROOM // <b id="header-room-code">3434</b></span>
+                </div>
+                <div class="header-actions">
+                    <button id="clear-btn" title="Clear Chat"><i class="fa-solid fa-trash"></i> Clear</button>
+                    <div class="user-badge" id="current-user-badge">rAJA</div>
+                </div>
+            </header>
+
+            <div class="chat-messages" id="chat-messages">
+                <div class="system-message">--- Start of conversation ---</div>
+            </div>
+
+            <div class="chat-input-area">
+                <label for="media-input" class="media-btn" title="Upload Photo or Video">
+                    <i class="fa-regular fa-image"></i>
+                </label>
+                <input type="file" id="media-input" accept="image/*,video/*" style="display: none;">
+                
+                <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off">
+                <button id="send-btn"><i class="fa-solid fa-paper-plane"></i></button>
+            </div>
+        </main>
     </div>
 
-    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <script src="script.js"></script>
