@@ -1,4 +1,4 @@
-// --- Firebase Config (আপনার কনফিগারেশন) ---
+// --- Firebase Config ---
 const firebaseConfig = {
     apiKey: "AIzaSyDG5WM0vhgigbmEDahNlEkry5Mepek90UM",
     authDomain: "ip-chat-6423a.firebaseapp.com",
@@ -32,8 +32,6 @@ const membersList = document.getElementById('members-list');
 const onlineNum = document.getElementById('online-num');
 const attachBtn = document.getElementById('attach-btn');
 const mediaFileInput = document.getElementById('media-file-input');
-
-// Mobile Menu Elements
 const chatSidebar = document.getElementById('chat-sidebar');
 const menuToggleBtn = document.getElementById('menu-toggle-btn');
 const closeSidebar = document.getElementById('close-sidebar');
@@ -65,17 +63,14 @@ connectBtn.addEventListener('click', () => {
     initChatRoom();
 });
 
-// Mobile Sidebar Toggle Events
-if (menuToggleBtn) {
-    menuToggleBtn.addEventListener('click', () => {
-        chatSidebar.classList.toggle('active');
-    });
-}
-if (closeSidebar) {
-    closeSidebar.addEventListener('click', () => {
-        chatSidebar.classList.remove('active');
-    });
-}
+// Mobile Sidebar Toggle
+menuToggleBtn.addEventListener('click', () => {
+    chatSidebar.classList.add('active');
+});
+
+closeSidebar.addEventListener('click', () => {
+    chatSidebar.classList.remove('active');
+});
 
 function initChatRoom() {
     roomRef = db.ref('rooms/' + currentRoom + '/messages');
