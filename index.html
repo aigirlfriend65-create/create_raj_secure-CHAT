@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>IPChat — Room-Based Messenger</title>
+    <!-- PWA Manifest Link -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#00f0ff">
     <link rel="stylesheet" href="style.css">
@@ -11,6 +12,7 @@
 </head>
 <body>
 
+    <!-- Login / Room Join Screen -->
     <div id="auth-screen" class="container">
         <div class="card glowing-box">
             <h1>[ <span class="highlight">IPCHAT</span> ]</h1>
@@ -29,13 +31,16 @@
 
             <button id="connect-btn" class="glowing-btn">CONNECT <i class="fa-solid fa-arrow-right"></i></button>
             
-            <button id="install-btn" class="install-box-btn hidden">
+            <!-- PWA Install Button styled as a clean card/box -->
+            <button id="install-btn" class="install-box-btn">
                 <i class="fa-solid fa-download"></i> INSTALL IP CHAT
             </button>
         </div>
     </div>
 
+    <!-- Chat Room Screen -->
     <div id="chat-screen" class="chat-layout hidden">
+        <!-- Sidebar Drawer (Mobile & Desktop Responsive) -->
         <aside class="chat-sidebar" id="chat-sidebar">
             <div class="sidebar-top">
                 <span class="brand">[<span class="highlight">IPCHAT</span>]</span>
@@ -51,7 +56,8 @@
             <div class="members-section">
                 <span class="label">MEMBERS</span>
                 <div id="members-list" class="members-list">
-                    </div>
+                    <!-- Dynamically added members -->
+                </div>
             </div>
 
             <div class="sidebar-bottom">
@@ -59,6 +65,7 @@
             </div>
         </aside>
 
+        <!-- Main Chat Area -->
         <main class="chat-main">
             <header class="chat-header">
                 <div class="header-left-group">
@@ -77,6 +84,7 @@
                 <div class="system-message">— Start of conversation —</div>
             </div>
 
+            <!-- Mobile-Optimized Input Area -->
             <div class="chat-input-area">
                 <input type="file" id="media-file-input" accept="image/*,video/*" style="display: none;">
                 
@@ -87,5 +95,9 @@
         </main>
     </div>
 
+    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
