@@ -34,7 +34,7 @@ body {
     background-color: var(--bg-color);
     color: var(--text-primary);
     height: 100vh;
-    height: 100dvh; /* Mobile viewport fix */
+    height: 100dvh;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -133,6 +133,29 @@ body {
 .glowing-btn:hover {
     opacity: 0.9;
     box-shadow: 0 0 25px var(--accent-color);
+}
+
+/* Custom Install App Box Style matching Connect Button */
+.install-box-btn {
+    width: 100%;
+    padding: 13px;
+    background: transparent;
+    border: 1px solid var(--accent-color);
+    color: var(--accent-color);
+    font-weight: bold;
+    border-radius: 6px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    font-size: 14px;
+    margin-top: 12px;
+    box-shadow: 0 0 10px var(--accent-glow);
+    transition: 0.3s;
+}
+
+.install-box-btn:hover {
+    background: var(--accent-color);
+    color: #0b0f19;
+    box-shadow: 0 0 20px var(--accent-color);
 }
 
 /* Chat Layout & Sidebar */
