@@ -32,10 +32,11 @@
 
     <!-- Chat Room Screen -->
     <div id="chat-screen" class="chat-layout hidden">
-        <!-- Sidebar -->
-        <aside class="chat-sidebar">
+        <!-- Sidebar (Drawer for mobile & fixed for desktop) -->
+        <aside class="chat-sidebar" id="chat-sidebar">
             <div class="sidebar-top">
                 <span class="brand">[<span class="highlight">IPCHAT</span>]</span>
+                <button id="close-sidebar" class="icon-btn mobile-only"><i class="fa-solid fa-xmark"></i></button>
             </div>
             
             <div class="room-box">
@@ -59,8 +60,11 @@
         <!-- Main Chat Area -->
         <main class="chat-main">
             <header class="chat-header">
-                <div class="header-room-info">
-                    ROOM // <b id="header-room-code" class="highlight">3434</b>
+                <div class="header-left-group">
+                    <button id="menu-toggle-btn" class="icon-btn mobile-only"><i class="fa-solid fa-bars"></i></button>
+                    <div class="header-room-info">
+                        ROOM // <b id="header-room-code" class="highlight">3434</b>
+                    </div>
                 </div>
                 <div class="header-actions">
                     <button id="clear-btn" class="outline-btn"><i class="fa-solid fa-trash"></i> Clear</button>
