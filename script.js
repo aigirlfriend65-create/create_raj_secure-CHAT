@@ -1,12 +1,13 @@
-// --- Firebase Config (আপনার প্রজেক্টের ফায়ারবেস কনফিগারেশন এখানে দিন) ---
+// --- Firebase Config (আপনার দেওয়া প্রজেক্ট ডিটেইলস সহ) ---
 const firebaseConfig = {
-    apiKey: "YOUR_FIREBASE_API_KEY",
-    authDomain: "YOUR_FIREBASE_AUTH_DOMAIN",
-    databaseURL: "YOUR_FIREBASE_DATABASE_URL",
-    projectId: "YOUR_FIREBASE_PROJECT_ID",
-    storageBucket: "YOUR_FIREBASE_STORAGE_BUCKET",
-    messagingSenderId: "YOUR_FIREBASE_MESSAGING_SENDER_ID",
-    appId: "YOUR_FIREBASE_APP_ID"
+    apiKey: "AIzaSyDG5WM0vhgigbmEDahNlEkry5Mepek90UM",
+    authDomain: "ip-chat-6423a.firebaseapp.com",
+    databaseURL: "https://ip-chat-6423a-default-rtdb.firebaseio.com",
+    projectId: "ip-chat-6423a",
+    storageBucket: "ip-chat-6423a.firebasestorage.app",
+    messagingSenderId: "467904400423",
+    appId: "1:467904400423:web:f2a3fbeaac2702aa859202",
+    measurementId: "G-RLXGCLNQKP"
 };
 
 // Initialize Firebase
@@ -56,7 +57,9 @@ function initChatRoom() {
     // Listen for new messages
     roomRef.on('child_added', (snapshot) => {
         const data = snapshot.val();
-        appendMessage(data.sender, data.text);
+        if (data) {
+            appendMessage(data.sender, data.text);
+        }
     });
 
     // Listen for clear chat command
