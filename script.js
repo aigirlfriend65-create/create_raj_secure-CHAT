@@ -1,13 +1,6 @@
-// --- Firebase Config ---
+// Firebase Configuration (আপনার প্রজেক্টের সঠিক কনফিগারেশন এখানে বসানো আছে)
 const firebaseConfig = {
-    apiKey: "AIzaSyDG5WM0vhgigbmEDahNlEkry5Mepek90UM",
-    authDomain: "ip-chat-6423a.firebaseapp.com",
-    databaseURL: "https://ip-chat-6423a-default-rtdb.firebaseio.com",
-    projectId: "ip-chat-6423a",
-    storageBucket: "ip-chat-6423a.firebasestorage.app",
-    messagingSenderId: "467904400423",
-    appId: "1:467904400423:web:f2a3fbeaac2702aa859202",
-    measurementId: "G-RLXGCLNQKP"
+    databaseURL: "https://ipchat-messenger-default-rtdb.firebaseio.com/"
 };
 
 // Initialize Firebase
@@ -20,142 +13,166 @@ const chatScreen = document.getElementById('chat-screen');
 const usernameInput = document.getElementById('username');
 const roomCodeInput = document.getElementById('room-code');
 const connectBtn = document.getElementById('connect-btn');
+const installBtn = document.getElementById('install-btn');
+
 const displayRoom = document.getElementById('display-room');
 const headerRoomCode = document.getElementById('header-room-code');
+const onlineNum = document.getElementById('online-num');
+const membersList = document.getElementById('members-list');
+const userBadge = document.getElementById('user-badge');
 const chatMessages = document.getElementById('chat-messages');
 const messageInput = document.getElementById('message-input');
 const sendBtn = document.getElementById('send-btn');
 const clearBtn = document.getElementById('clear-btn');
 const leaveBtn = document.getElementById('leave-btn');
-const userBadge = document.getElementById('user-badge');
-const membersList = document.getElementById('members-list');
-const onlineNum = document.getElementById('online-num');
-const attachBtn = document.getElementById('attach-btn');
-const mediaFileInput = document.getElementById('media-file-input');
-const chatSidebar = document.getElementById('chat-sidebar');
+
 const menuToggleBtn = document.getElementById('menu-toggle-btn');
 const closeSidebar = document.getElementById('close-sidebar');
-const installBtn = document.getElementById('install-btn');
+const chatSidebar = document.getElementById('chat-sidebar');
+const attachBtn = document.getElementById('attach-btn');
+const mediaFileInput = document.getElementById('media-file-input');
 
 let currentUser = '';
 let currentRoom = '';
-let roomRef = null;
-let userPresenceRef = null;
-let deferredPrompt = null;
+let userRef = null;
 
-// PWA Install Prompt Listener
+// PWA Install Logic (সব সময় দৃশ্যমান ও কাজ করার উপযোগী)
+let deferredPrompt;
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
-    installBtn.classList.remove('hidden');
 });
 
-installBtn.addEventListener('click', async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-        installBtn.classList.add('hidden');
-    }
-    deferredPrompt = null;
-});
+if (installBtn) {
+    installBtn.addEventListener('click', async () => {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            deferredPrompt = null;
+        } else {
+            alert('To install this app, tap your browser menu (3 dots) and select "Add to Home Screen" or "Install App".');
+        }
+    });
+}
 
 // Connect to Room
 connectBtn.addEventListener('click', () => {
     const username = usernameInput.value.trim();
-    const roomCode = roomCodeInput.value.trim().toLowerCase();
+    const room = roomCodeInput.value.trim();
 
-    if (!username || !roomCode) {
-        alert('Please enter both username and room code/IP.');
+    if (!username || !room) {
+        alert('Please enter both username and IP / Room Code');
         return;
     }
 
     currentUser = username;
-    currentRoom = roomCode.replace(/[.#$[\]]/g, '_');
+    currentRoom = room.replace(/[.#$[\]]/g, '_'); // Sanitize room string for Firebase
 
     authScreen.classList.add('hidden');
     chatScreen.classList.remove('hidden');
-    displayRoom.textContent = roomCode;
-    headerRoomCode.textContent = roomCode;
-    userBadge.textContent = username;
 
-    initChatRoom();
+    displayRoom.innerText = room;
+    headerRoomCode.innerText = room;
+    userBadge.innerText = currentUser;
+
+    initChatSession();
 });
 
-// Mobile Sidebar Toggle
-menuToggleBtn.addEventListener('click', () => {
-    chatSidebar.classList.add('active');
-});
+function initChatSession() {
+    const roomRef = db.ref('rooms/' + currentRoom);
+    const messagesRef = roomRef.child('messages');
+    const presenceRef = roomRef.child('presence');
 
-closeSidebar.addEventListener('click', () => {
-    chatSidebar.classList.remove('active');
-});
+    userRef = presenceRef.push();
+    userRef.set({ name: currentUser });
+    userRef.onDisconnect().remove();
 
-function initChatRoom() {
-    roomRef = db.ref('rooms/' + currentRoom + '/messages');
-    
-    // Listen for new messages & media
-    roomRef.on('child_added', (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-            appendMessage(data.sender, data.text, data.mediaUrl, data.mediaType);
-        }
-    });
-
-    // Listen for clear chat
-    db.ref('rooms/' + currentRoom + '/cleared').on('value', (snapshot) => {
-        if(snapshot.val()) {
-            chatMessages.innerHTML = '<div class="system-message">— Chat cleared —</div>';
-        }
-    });
-
-    // Handle Active Online Members Presence
-    const memberKey = currentUser.replace(/[.#$[\]]/g, '_');
-    userPresenceRef = db.ref('rooms/' + currentRoom + '/members/' + memberKey);
-    userPresenceRef.set(true);
-    userPresenceRef.onDisconnect().remove();
-
-    // Track active members list
-    db.ref('rooms/' + currentRoom + '/members').on('value', (snapshot) => {
-        const members = snapshot.val() || {};
-        const memberNames = Object.keys(members);
-        onlineNum.textContent = memberNames.length;
-        
+    // Listen to online presence
+    presenceRef.on('value', (snapshot) => {
+        const members = snapshot.val();
         membersList.innerHTML = '';
-        memberNames.forEach(name => {
-            const div = document.createElement('div');
-            div.classList.add('member-item');
-            const isYou = name === currentUser.replace(/[.#$[\]]/g, '_');
-            div.innerHTML = `<span><span class="dot" style="display:inline-block; width:6px; height:6px; background:#22c55e; border-radius:50%; margin-right:6px;"></span>${name}</span> ${isYou ? '<span class="you-tag">you</span>' : ''}`;
-            membersList.appendChild(div);
+        let count = 0;
+
+        if (members) {
+            Object.values(members).forEach(member => {
+                count++;
+                const div = document.createElement('div');
+                div.className = 'member-item';
+                div.innerHTML = `<span>${member.name}</span> ${member.name === currentUser ? '<span class="you-tag">You</span>' : ''}`;
+                membersList.appendChild(div);
+            });
+        }
+        onlineNum.innerText = count;
+    });
+
+    // Send Message
+    const sendMessage = (content, type = 'text') => {
+        if (!content) return;
+        messagesRef.push({
+            sender: currentUser,
+            content: content,
+            type: type,
+            timestamp: firebase.database.ServerValue.TIMESTAMP
         });
+        messageInput.value = '';
+    };
+
+    sendBtn.addEventListener('click', () => sendMessage(messageInput.value.trim(), 'text'));
+    messageInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendMessage(messageInput.value.trim(), 'text');
+    });
+
+    // Listen to incoming messages
+    messagesRef.limitToLast(50).on('child_added', (snapshot) => {
+        const msg = snapshot.val();
+        appendMessage(msg);
+    });
+
+    // Clear messages locally
+    clearBtn.addEventListener('click', () => {
+        chatMessages.innerHTML = '<div class="system-message">— Conversation cleared locally —</div>';
+    });
+
+    // Leave room
+    leaveBtn.addEventListener('click', () => {
+        if (userRef) userRef.remove();
+        window.location.reload();
     });
 }
 
-// Send Text Message
-function sendMessage() {
-    const text = messageInput.value.trim();
-    if (!text) return;
+// Append Message to UI
+function appendMessage(msg) {
+    const div = document.createElement('div');
+    const isOutgoing = msg.sender === currentUser;
+    div.className = `message ${isOutgoing ? 'outgoing' : 'incoming'}`;
 
-    roomRef.push({
-        sender: currentUser,
-        text: text,
-        timestamp: Date.now()
-    });
+    let innerHTML = `<span class="sender">${msg.sender}</span>`;
+    if (msg.type === 'image') {
+        innerHTML += `<img src="${msg.content}" class="media-content">`;
+    } else if (msg.type === 'video') {
+        innerHTML += `<video src="${msg.content}" class="media-content" controls></video>`;
+    } else {
+        innerHTML += `<span>${escapeHTML(msg.content)}</span>`;
+    }
 
-    messageInput.value = '';
+    div.innerHTML = innerHTML;
+    chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-sendBtn.addEventListener('click', sendMessage);
-messageInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') sendMessage();
-});
+// Security: Escape HTML to prevent XSS
+function escapeHTML(str) {
+    return str.replace(/[&<>'"]/g, 
+        tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+    );
+}
 
-// Media Upload Trigger (Photo & Video)
-attachBtn.addEventListener('click', () => {
-    mediaFileInput.click();
-});
+// Sidebar Toggles for Mobile
+menuToggleBtn.addEventListener('click', () => chatSidebar.classList.add('active'));
+closeSidebar.addEventListener('click', () => chatSidebar.classList.remove('active'));
 
+// Media Upload Handler (Base64)
+attachBtn.addEventListener('click', () => mediaFileInput.click());
 mediaFileInput.addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -163,63 +180,17 @@ mediaFileInput.addEventListener('change', (e) => {
     const reader = new FileReader();
     reader.onload = function(uploadEvent) {
         const base64Data = uploadEvent.target.result;
-        const mediaType = file.type.startsWith('video') ? 'video' : 'image';
-
-        roomRef.push({
-            sender: currentUser,
-            text: file.name,
-            mediaUrl: base64Data,
-            mediaType: mediaType,
-            timestamp: Date.now()
-        });
+        const type = file.type.startsWith('video') ? 'video' : 'image';
+        
+        // Push to Firebase directly
+        if (currentRoom) {
+            db.ref('rooms/' + currentRoom + '/messages').push({
+                sender: currentUser,
+                content: base64Data,
+                type: type,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            });
+        }
     };
     reader.readAsDataURL(file);
-    mediaFileInput.value = '';
 });
-
-// Append Message / Media to UI
-function appendMessage(sender, text, mediaUrl, mediaType) {
-    const msgDiv = document.createElement('div');
-    msgDiv.classList.add('message');
-    
-    let mediaHTML = '';
-    if (mediaUrl) {
-        if (mediaType === 'video') {
-            mediaHTML = `<video src="${mediaUrl}" controls class="media-content"></video>`;
-        } else {
-            mediaHTML = `<img src="${mediaUrl}" class="media-content" alt="Uploaded Image">`;
-        }
-    }
-
-    if (sender === currentUser) {
-        msgDiv.classList.add('outgoing');
-        msgDiv.innerHTML = `<span class="sender">You</span>${mediaUrl ? mediaHTML : escapeHtml(text)}`;
-    } else {
-        msgDiv.classList.add('incoming');
-        msgDiv.innerHTML = `<span class="sender">${escapeHtml(sender)}</span>${mediaUrl ? mediaHTML : escapeHtml(text)}`;
-    }
-
-    chatMessages.appendChild(msgDiv);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-}
-
-// Clear Chat
-clearBtn.addEventListener('click', () => {
-    if (confirm('Are you sure you want to clear the chat for everyone?')) {
-        db.ref('rooms/' + currentRoom + '/messages').remove();
-        db.ref('rooms/' + currentRoom + '/cleared').set(true);
-    }
-});
-
-// Leave Room
-leaveBtn.addEventListener('click', () => {
-    if(userPresenceRef) userPresenceRef.remove();
-    window.location.reload();
-});
-
-// Helper to prevent HTML injection
-function escapeHtml(text) {
-    if (!text) return '';
-    const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
-    return text.replace(/[&<>"']/g, function(m) { return map[m]; });
-}
