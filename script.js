@@ -35,11 +35,30 @@ const mediaFileInput = document.getElementById('media-file-input');
 const chatSidebar = document.getElementById('chat-sidebar');
 const menuToggleBtn = document.getElementById('menu-toggle-btn');
 const closeSidebar = document.getElementById('close-sidebar');
+const installBtn = document.getElementById('install-btn');
 
 let currentUser = '';
 let currentRoom = '';
 let roomRef = null;
 let userPresenceRef = null;
+let deferredPrompt = null;
+
+// PWA Install Prompt Listener
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    installBtn.classList.remove('hidden');
+});
+
+installBtn.addEventListener('click', async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+        installBtn.classList.add('hidden');
+    }
+    deferredPrompt = null;
+});
 
 // Connect to Room
 connectBtn.addEventListener('click', () => {
