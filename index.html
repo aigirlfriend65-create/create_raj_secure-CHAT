@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IPChat — Room-Based Messenger</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <!-- Login / Room Join Screen -->
+    <div id="auth-screen" class="container">
+        <div class="card">
+            <h1>[ IPCHAT ]</h1>
+            <p>Enter a shared IP address or room code to join the same room.</p>
+            
+            <div class="input-group">
+                <label>USERNAME</label>
+                <input type="text" id="username" placeholder="Your Name" autocomplete="off">
+            </div>
+
+            <div class="input-group">
+                <label>IP ADDRESS (ROOM CODE)</label>
+                <input type="text" id="room-code" placeholder="e.g. 192.168.1.1 or custom-room" autocomplete="off">
+            </div>
+
+            <button id="connect-btn">CONNECT</button>
+        </div>
+    </div>
+
+    <!-- Chat Room Screen -->
+    <div id="chat-screen" class="chat-container hidden">
+        <header class="chat-header">
+            <div class="header-left">
+                <span class="brand">[IPCHAT]</span> 
+                <span class="room-indicator">ROOM: <b id="display-room"></b></span>
+            </div>
+            <div class="header-right">
+                <span class="online-status"><span class="dot"></span> <span id="online-count">1</span> online</span>
+                <button id="clear-btn" title="Clear Chat"><i class="fa-solid fa-trash"></i> Clear</button>
+                <button id="leave-btn" title="Leave Room"><i class="fa-solid fa-arrow-left-long"></i> Leave</button>
+            </div>
+        </header>
+
+        <div class="chat-messages" id="chat-messages">
+            <div class="system-message">--- Start of conversation ---</div>
+        </div>
+
+        <div class="chat-input-area">
+            <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off">
+            <button id="send-btn"><i class="fa-solid fa-paper-plane"></i></button>
+        </div>        
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
