@@ -1,6 +1,13 @@
-// Firebase Configuration (আপনার প্রজেক্টের সঠিক কনফিগারেশন এখানে বসানো আছে)
+// Firebase Configuration (Updated with your new Firebase keys)
 const firebaseConfig = {
-    databaseURL: "https://ipchat-messenger-default-rtdb.firebaseio.com/"
+    apiKey: "AIzaSyAR34u1V1SmYph9PVZg0BNhK7Wfb7r4-Cw",
+    authDomain: "chat-8501b.firebaseapp.com",
+    databaseURL: "https://chat-8501b-default-rtdb.firebaseio.com",
+    projectId: "chat-8501b",
+    storageBucket: "chat-8501b.firebasestorage.app",
+    messagingSenderId: "1013550632468",
+    appId: "1:1013550632468:web:898f3e347df294ac8ba101",
+    measurementId: "G-Z5CN4610M8"
 };
 
 // Initialize Firebase
@@ -36,7 +43,7 @@ let currentUser = '';
 let currentRoom = '';
 let userRef = null;
 
-// PWA Install Logic (সব সময় দৃশ্যমান ও কাজ করার উপযোগী)
+// PWA Install Logic (সব সময় দৃশ্যমান ও কাজ করার উপযোগী)
 let deferredPrompt;
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
